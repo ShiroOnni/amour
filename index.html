@@ -7,18 +7,61 @@
     <style>
         body {
             background-image: url('sysy.JPG'); /* Remplace par le nom de ton image */
-            background-size: cover; /* Pour couvrir tout l'écran */
-            background-position: center; /* Centrer l'image */
-            color: white; /* Change la couleur du texte pour le rendre lisible */
+            background-size: cover;
+            background-position: center;
+            color: white;
             font-family: Arial, sans-serif;
             text-align: center;
-            margin: 0; /* Pour enlever les marges par défaut */
-            height: 100vh; /* Pour prendre toute la hauteur de la fenêtre */
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-size: 3em;
+            text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.7); /* Ajoute une ombre pour améliorer la lisibilité */
+            animation: pulse 3s infinite; /* Animation de pulsation */
+        }
+
+        p {
+            font-size: 1.5em;
+            margin: 20px;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5); /* Légère opacité pour améliorer la lecture */
+            border-radius: 10px;
+            box-shadow: 2px 2px 15px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            animation: fadeIn 2s ease-in-out forwards 1s; /* Apparition en douceur */
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes fadeIn {
+            0% {
+                opacity: 0;
+            }
+            100% {
+                opacity: 1;
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Pour ma femme que j'aime de ton mon coeur</h1>
-    <p>desole mon coeur si te sens pas bien aujourd'hui moi aussi je me sens pas quand tu te sens pas bien.</p>
+    <h1>Pour ma femme que j'aime de tout mon cœur</h1>
+    <p>Désolé mon cœur si tu ne te sens pas bien aujourd'hui, moi aussi je ne me sens pas bien quand tu ne vas pas bien.</p>
 </body>
 </html>
