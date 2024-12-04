@@ -185,3 +185,19 @@ function animate() {
   renderer.render(scene, camera);
 }
 animate();
+// Support pour les mobiles et les ordinateurs
+letter.addEventListener('click', reformPlanet); // Pour les clics classiques
+letter.addEventListener('touchstart', reformPlanet); // Pour les interactions tactiles
+
+window.addEventListener('click', () => {
+  if (!planetDestroyed) {
+    planetDestroyed = true;
+    explodePlanet();
+  }
+});
+window.addEventListener('touchstart', () => {
+  if (!planetDestroyed) {
+    planetDestroyed = true;
+    explodePlanet();
+  }
+});
