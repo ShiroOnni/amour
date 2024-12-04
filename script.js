@@ -201,3 +201,15 @@ window.addEventListener('touchstart', () => {
     explodePlanet();
   }
 });
+function generateHeartShapePositions(count) {
+    const positions = [];
+    for (let i = 0; i < count; i++) {
+        const t = Math.random() * 2 * Math.PI;
+        const r = (Math.sin(t) * Math.sqrt(Math.abs(Math.cos(t)))) / (Math.sin(t) + 1.4) - 2 * Math.sin(t) + 2;
+        const x = r * Math.cos(t) * 0.5 + heartCenter.x; // Échelle augmentée et centré
+        const y = r * Math.sin(t) * 0.5 + heartCenter.y;
+        const z = (Math.random() - 0.5) * 0.2 + heartCenter.z; // Variation en Z
+        positions.push({ x, y, z });
+    }
+    return positions;
+}
