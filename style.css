@@ -13,7 +13,6 @@ body {
     position: relative;
 }
 
-/* Ajout de styles pour rendre le texte adaptatif */
 .text {
     font-size: calc(1vw + 1vh + 0.5vmin);
     color: white;
@@ -22,12 +21,29 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    white-space: pre-wrap; /* Assure le retour à la ligne pour les textes longs */
+    white-space: pre-wrap;
+    max-width: 90%;
+    line-height: 1.5;
+    z-index: 10;
+    display: none;
 }
 
-/* Styles pour s'assurer que la scène est bien contenue */
 canvas {
     display: block;
     width: 100%;
     height: 100%;
+}
+.text {
+    font-size: 1.2rem; /* Taille du texte en rem */
+    color: white;
+    text-align: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    white-space: pre-wrap;
+    max-width: 90%;
+    line-height: 1.5;
+    z-index: 10;
+    display: none;
 }

@@ -1,7 +1,6 @@
-// Code original ajusté pour centrer uniquement la lettre
-
-// Configuration de base
+// Configuration de la scène et du rendu
 const container = document.getElementById('container');
+const letter = document.getElementById('letter');
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -21,75 +20,78 @@ const planetMaterial = new THREE.MeshStandardMaterial({ color: 0x3399ff });
 const planet = new THREE.Mesh(planetGeometry, planetMaterial);
 scene.add(planet);
 
-// Étoiles en arrière-plan
-function createDynamicStars() {
+// Variables globales
+let planetDestroyed = false;
+let particles = null;
+let initialPositions = [];
+let heartCenter = new THREE.Vector3(0, 0, 0); // Position cible du cœur
+
+// Synchronisation : Centrer le cœur sur l'écriture
+function syncHeartCenter() {
+  const rect = letter.getBoundingClientRect(); // Récupère la position de l'écriture
+  const x = (rect.left + rect.width / 2 - window.innerWidth / 2) / (window.innerWidth / 2);
+  const y = -(rect.top + rect.height / 2 - window.innerHeight / 2) / (window.innerHeight / 2);
+  heartCenter.set(x * 2, y * 2, 0); // Conversion en coordonnées 3D (scène)
+}
+
+// Ajout des étoiles en arrière-plan
+function addStars() {
   const starGeometry = new THREE.BufferGeometry();
-  const starMaterial = new THREE.PointsMaterial({
-    size: 0.1,
-    transparent: true,
-    opacity: 0.8,
-    vertexColors: true,
-  });
+  const starMaterial = new THREE.PointsMaterial({ color: 0xffffff, size: 0.1 });
 
-  const starCount = 2000;
-  const positions = [];
-  const colors = [];
+  const starCount = 1000;
+  const starPositions = [];
   for (let i = 0; i < starCount; i++) {
-    positions.push(
-      (Math.random() - 0.5) * 200,
-      (Math.random() - 0.5) * 200,
-      (Math.random() - 0.5) * 200
+    starPositions.push(
+      (Math.random() - 0.5) * 200, // X
+      (Math.random() - 0.5) * 200, // Y
+      (Math.random() - 0.5) * 200  // Z
     );
-    colors.push(Math.random(), Math.random(), Math.random());
   }
-
-  starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  starGeometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starPositions, 3));
 
   const stars = new THREE.Points(starGeometry, starMaterial);
   scene.add(stars);
-  return stars;
 }
 
-const stars = createDynamicStars();
+// Génération des positions en forme de cœur
+function generateHeartShapePositions(count) {
+  const positions = [];
+  for (let i = 0; i < count; i++) {
+    const t = Math.random() * 2 * Math.PI;
+    const r = (Math.sin(t) * Math.sqrt(Math.abs(Math.cos(t)))) / (Math.sin(t) + 1.4) - 2 * Math.sin(t) + 2;
+    const x = r * Math.cos(t) * 0.2 + heartCenter.x; // Échelle réduite + centrage
+    const y = r * Math.sin(t) * 0.2 + heartCenter.y; // Échelle réduite + centrage
+    const z = (Math.random() - 0.5) * 0.1 + heartCenter.z; // Légère variation en Z
+    positions.push({ x, y, z });
+  }
+  return positions;
+}
 
 // Explosion de la planète
-let planetDestroyed = false;
-let particles = null;
-
 function explodePlanet() {
-  if (planetDestroyed) return;
-  planetDestroyed = true;
-
-  // Supprimer la planète
+  if (particles) return; // Évite une nouvelle explosion si déjà en cours
   scene.remove(planet);
+  syncHeartCenter(); // Met à jour la position cible du cœur
 
-  // Particules d'explosion
   const particleGeometry = new THREE.BufferGeometry();
-  const particleMaterial = new THREE.PointsMaterial({
-    size: 0.1,
-    vertexColors: true,
-    transparent: true,
-    opacity: 0.9,
-  });
+  const particleMaterial = new THREE.PointsMaterial({ size: 0.1, vertexColors: true, transparent: true, opacity: 0.9 });
 
   const particleCount = 500;
+  const heartPositions = generateHeartShapePositions(particleCount); // Générer les positions en forme de cœur
   const positions = [];
   const velocities = [];
   const colors = [];
+
   for (let i = 0; i < particleCount; i++) {
-    positions.push(
-      Math.random() - 0.5,
-      Math.random() - 0.5,
-      Math.random() - 0.5
-    );
+    const x = (Math.random() - 0.5) * 2;
+    const y = (Math.random() - 0.5) * 2;
+    const z = (Math.random() - 0.5) * 2;
 
-    velocities.push(
-      (Math.random() - 0.5) * 0.02,
-      (Math.random() - 0.5) * 0.02,
-      (Math.random() - 0.5) * 0.02
-    );
+    positions.push(x, y, z);
+    initialPositions.push(heartPositions[i]); // Position cible en forme de cœur
 
+    velocities.push((Math.random() - 0.5) * 0.03, (Math.random() - 0.5) * 0.03, (Math.random() - 0.5) * 0.03);
     colors.push(Math.random(), Math.random(), Math.random());
   }
 
@@ -100,81 +102,86 @@ function explodePlanet() {
   particles = new THREE.Points(particleGeometry, particleMaterial);
   scene.add(particles);
 
-  // Afficher le texte après un délai
-  setTimeout(() => {
-    displayLetter();
-  }, 3000);
+  setTimeout(() => { letter.style.display = 'block'; }, 3000);
 }
 
-// Affichage de la lettre centrée
-function displayLetter() {
-  const loader = new THREE.FontLoader();
+// Réformation de la planète
+function reformPlanet() {
+  if (!particles) return; // Si pas de particules, aucune réformation
+  const particlePositions = particles.geometry.attributes.position;
+  const speed = 0.15; // Vitesse augmentée pour former le cœur rapidement
+  let allParticlesReformed = true;
 
-  loader.load('https://threejs.org/examples/fonts/helvetiker_regular.typeface.json', (font) => {
-    const message = `
-      Ma chérie d’amour je voulais t’écrire cette lettre pour ta deuxième journée d’ebc je voulais te dire que déjà de une je nique ton reuf a la bagarre mais sa c’est un détaille Nn en sah jeudi c’est shs donc pour cette occasion j voulais sortir mon bagage en bac literature donc premièrement tu dois bien lire psk avec toi des fois ton œil il part a de l’autre sens tkt pas t trop mignonne comme sa( la musique elle pt ta vu ) nn en vrai sah cette fois ne stresse pas je sais que t malade je pense que dans ta tête sa explose pareil que ici j’espère sa ira mieux dm in shaa allah ne stresse pas fais ce que je t’ai dit fermé les yeux et tu respire. Je serais tjr près de toi mm de loin 
+  for (let i = 0; i < particlePositions.count; i++) {
+    const index = i * 3;
 
-    Tu a bosser comme une folle mais tu ne l’es pas rassure toi donc il y’a pas de chance que tu ne réussi mm ton concours petite lettre d’amour pour te motiver 
+    const currentX = particlePositions.array[index];
+    const currentY = particlePositions.array[index + 1];
+    const currentZ = particlePositions.array[index + 2];
 
-    Et n’oublie pas on peut toujours revenir en arrière ( click sur la lettre❤️.
-    `;
+    const targetX = initialPositions[i].x;
+    const targetY = initialPositions[i].y;
+    const targetZ = initialPositions[i].z;
 
-    const textSize = Math.min(window.innerWidth / 40, 0.5);
+    // Met à jour la position
+    particlePositions.array[index] += (targetX - currentX) * speed;
+    particlePositions.array[index + 1] += (targetY - currentY) * speed;
+    particlePositions.array[index + 2] += (targetZ - currentZ) * speed;
 
-    const textGeometry = new THREE.TextGeometry(message, {
-      font: font,
-      size: textSize,
-      height: 0.1,
-      curveSegments: 12,
-    });
+    // Vérifie si la particule est proche de la cible
+    if (
+      Math.abs(targetX - currentX) > 0.001 ||
+      Math.abs(targetY - currentY) > 0.001 ||
+      Math.abs(targetZ - currentZ) > 0.001
+    ) {
+      allParticlesReformed = false;
+    }
+  }
 
-    const textMaterial = new THREE.MeshStandardMaterial({ color: 0xff5555 });
-    const textMesh = new THREE.Mesh(textGeometry, textMaterial);
+  // Indique que les positions ont été modifiées
+  particlePositions.needsUpdate = true;
 
-    // Centrage dynamique
-    textGeometry.computeBoundingBox();
-    const centerOffsetX = -0.5 * (textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x);
-    const centerOffsetY = -0.5 * (textGeometry.boundingBox.max.y - textGeometry.boundingBox.min.y);
-    textMesh.position.set(centerOffsetX, centerOffsetY, 0);
-
-    scene.add(textMesh);
-  });
+  if (allParticlesReformed) {
+    console.log("Toutes les particules sont reformées !");
+    scene.remove(particles);
+    particles = null; // Réinitialise les particules
+    letter.style.display = 'none'; // Cache la lettre
+  } else {
+    requestAnimationFrame(reformPlanet);
+  }
 }
 
-// Animation
+// Événements
+letter.addEventListener('click', () => reformPlanet());
+window.addEventListener('click', () => { if (!planetDestroyed) { planetDestroyed = true; explodePlanet(); } });
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+});
+
+// Animation principale
 camera.position.z = 5;
+addStars(); // Ajout des étoiles
 function animate() {
   requestAnimationFrame(animate);
 
-  if (!planetDestroyed) {
-    planet.rotation.y += 0.01;
-  }
+  if (!planetDestroyed && planet) planet.rotation.y += 0.01;
 
   if (particles) {
     const particlePositions = particles.geometry.attributes.position;
     const particleVelocities = particles.geometry.attributes.velocity;
 
     for (let i = 0; i < particlePositions.count; i++) {
-      particlePositions.array[i * 3] += particleVelocities.array[i * 3];
-      particlePositions.array[i * 3 + 1] += particleVelocities.array[i * 3 + 1];
-      particlePositions.array[i * 3 + 2] += particleVelocities.array[i * 3 + 2];
+      const index = i * 3;
+      particlePositions.array[index] += particleVelocities.array[index];
+      particlePositions.array[index + 1] += particleVelocities.array[index + 1];
+      particlePositions.array[index + 2] += particleVelocities.array[index + 2];
     }
+
     particlePositions.needsUpdate = true;
   }
 
   renderer.render(scene, camera);
 }
-
 animate();
-
-// Gestion des clics
-window.addEventListener('click', () => {
-  explodePlanet();
-});
-
-// Gestion des redimensionnements
-window.addEventListener('resize', () => {
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-});
